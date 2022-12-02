@@ -1,30 +1,14 @@
 #include <TimeLib.h>
+#include <Dictionary.h>
 #include <SoftwareSerial.h>
-#define bluetooth A0
+#define _DICT_CRC_16
 
+// globals
 SoftwareSerial BTSerial(10, 11); // RX | TX
+//String JSON = "{\"108\":\"left\",\"114\": \"right\",\"117\": \"up\",\"100\": \"down\"}"
+Dictionary& controlMap = *(new Dictionary());
 
 
-void setup() {
-  Serial.begin(9600);
-  pinMode(bluetooth, INPUT);
-  BTSerial.begin(9600);
-  BTSerial.listen();
-  pinMode(0, INPUT);    
-};
-
-void loop() {
-  int x = digitalRead(10) ;
-  if(x!=1) Serial.println(digitalRead(10));
-  if (BTSerial.available()) { // read from HC-05 and send to Arduino Serial Monitor
-    char BTInput;
-    BTInput = BTSerial.read();
-    Serial.print(BTSerial.read());
-  }
-
-  if (Serial.available())     // Keep reading from Arduino Serial Monitor and send to HC-05
-    BTSerial.write(Serial.read());;
-};
 
 void writeEngine(int input);
 void writeServo(int input);
@@ -118,6 +102,56 @@ class Engine: public Component {
 class ServoClass: public Component {
   public:
     int angle;
+};
+
+void handleEngines();
+
+Command makeCommand(String input) {
+  String dir = controlMap[input];
+  int inputInt = input.toInt();
+  if (dir == "left") {
+    handleEngines();
+  } else if (dir == "right") {
+    handleEngines();
+  } else if (dir == "up") {
+    handleEngines();
+  } else if (dir == "down") {
+    handleEngines();
+  }
+  Serial.println(dir);
+}
+
+void handleEngines(){
+  Serial.println("Handle Engines");
+}
+
+float phSensor(){
+ int analogIn = analogRead(0);
+ float voltage = ((float)analogIn / 1023)*5;
+ float PH = (-3/0.52)*voltage+21.47;
+ return voltage;
+}
+
+
+
+void setup() {
+  Serial.begin(9600);
+  BTSerial.begin(9600);
+  controlMap.jload("{\"108\":\"left\",\"114\": \"right\",\"117\": \"up\",\"100\": \"down\"}");
+  //  Serial.println(controlMap.json());
+};
+
+void loop() {
+  Serial.println(phSensor());
+  if (BTSerial.available()) { // read from HC-05 and send to Arduino Serial Monitor
+    String BTInput;
+    BTInput += BTSerial.read();
+  //  Serial.println(BTInput);
+    makeCommand(BTInput);
+  }
+
+  if (Serial.available())     // Keep reading from Arduino Serial Monitor and send to HC-05
+    BTSerial.write(Serial.read());;
 };
 
 void writeEngine(int input) {
